@@ -1,0 +1,15 @@
+name: rm-rm
+version: "1.0"
+author: aleics
+about: Removes all the node_modules inside the directory
+args:
+  - recursive:
+      short: r
+      long: recursive
+      help: Removes recursively inside sub-directories
+  - directory:
+      short: d
+      long: directory
+      help: Remove in a specific directory
+      takes_value: true
+      value_name: PATH
