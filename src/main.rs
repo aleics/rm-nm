@@ -65,7 +65,7 @@ fn rm(path: &PathBuf) -> io::Result<PathBuf> {
             io::Error::new(io::ErrorKind::NotFound, format!("directory {:?} not found.", modules_path.display()))
         )
     } else {
-        fs::remove_dir_all(modules_path).map(|_| path.clone())
+        fs::remove_dir_all(modules_path.clone()).map(|_| modules_path)
     }
 }
 
@@ -114,7 +114,11 @@ mod tests {
     fn test_rm_dir() {
         prepare_dir(|current_dir| {
             match rm(&current_dir) {
-                Ok(result) => assert_eq!(result, current_dir),
+                Ok(result) => {
+                    let mut rm_dir = current_dir.clone();
+                    rm_dir.push("node_modules");
+                    assert_eq!(result, rm_dir)
+                },
                 Err(e) => assert!(false, format!("Error {:?}", e))
             }
         });
