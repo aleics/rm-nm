@@ -131,4 +131,80 @@ mod tests {
 
         assert!(rm(&dir).is_err());
     }
+
+    #[test]
+    fn test_rm_rec_dir() {
+        // remove 1st level node_modules
+        let mut current = env::current_dir().unwrap();
+        current.push("custom_1/node_modules");
+        fs::create_dir_all(current.clone())
+            .expect("should create custom_1/node_modules directory");
+
+        let modules_dir = current.clone();
+
+        current.pop();
+        current.pop();
+
+        let results = rm_rec(&current);
+        let success = results
+            .into_iter()
+            .find(|r| r.is_ok())
+            .unwrap()
+            .unwrap();
+        assert_eq!(success, modules_dir);
+
+
+        current.push("custom_1");
+        assert_eq!(current.exists(), true);
+
+        current.push("node_modules");
+        assert_eq!(current.exists(), false);
+
+        current.pop();
+
+        fs::remove_dir_all(current).expect("should remove custom_1 directory");
+
+        // remove 2nd level node_modules
+        let mut current = env::current_dir().unwrap();
+        current.push("custom_1/custom_1_1/node_modules");
+        fs::create_dir_all(current.clone())
+            .expect("should create custom_1/node_modules directory");
+
+        let modules_dir = current.clone();
+
+        current.pop();
+        current.pop();
+        current.pop();
+
+        let result = rm_rec(&current)
+            .into_iter()
+            .find(|r| r.is_ok())
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, modules_dir);
+
+
+        current.push("custom_1");
+        assert_eq!(current.exists(), true);
+
+        current.push("custom_1_1");
+        assert_eq!(current.exists(), true);
+
+        current.push("node_modules");
+        assert_eq!(current.exists(), false);
+
+        current.pop();
+        current.pop();
+
+        fs::remove_dir_all(current).expect("should remove custom_1 directory");
+    }
+
+    #[test]
+    fn test_rm_rec_non_existing_dir() {
+        let mut dir = PathBuf::new();
+        dir.push("/some/directory");
+
+        let result = rm_rec(&dir);
+        assert!(result.first().is_none());
+    }
 }
