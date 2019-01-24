@@ -8,6 +8,7 @@ fn main() {
     let matches = App::from_yaml(cli).get_matches();
 
     let recursive = matches.is_present("recursive");
+    let debug = matches.is_present("debug");
     let directory = extract_directory(matches.value_of("directory")).unwrap();
 
     let results = if recursive {
@@ -19,7 +20,11 @@ fn main() {
     for result in results {
         match result {
             Ok(p) => println!("removed successfully in {}", p.display()),
-            Err(err) => println!("{}", err)
+            Err(err) => {
+                if debug {
+                    println!("{}", err)
+                }
+            }
         }
     }
 }

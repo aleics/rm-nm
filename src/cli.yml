@@ -13,3 +13,6 @@ args:
       help: Remove in a specific directory
       takes_value: true
       value_name: PATH
+  - debug:
+      long: debug
+      help: Shows debug information
