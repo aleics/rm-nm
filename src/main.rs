@@ -11,7 +11,7 @@ fn main() {
     let directory = extract_directory(matches.value_of("directory")).unwrap();
 
     let results = if recursive {
-        rm_modules_rec( &directory)
+        rm_rec( &directory)
     } else {
         vec![rm(&directory)]
     };
@@ -39,15 +39,18 @@ fn extract_directory(arg_directory: Option<&str>) -> io::Result<PathBuf> {
     })
 }
 
-fn rm_modules_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
+fn rm_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
     let mut vec: Vec<io::Result<PathBuf>> = Vec::new();
-    // remove node modules in the current path
-    vec.push(rm(path));
+    if path.is_dir() {
+        // remove node modules in the current path
+        vec.push(rm(path));
 
-    let entries = path.read_dir().expect("couldn't read directory entries");
-    for entry in entries {
-        if let Ok(entry) = entry {
-            vec.append(&mut rm_modules_rec(&entry.path()));
+        let entries = path.read_dir()
+            .expect(format!("couldn't read directory entries from directory {}", path.display()).as_str());
+        for entry in entries {
+            if let Ok(dir) = entry {
+                vec.append(&mut rm_rec(&dir.path()));
+            }
         }
     }
 
