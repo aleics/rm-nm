@@ -1,8 +1,9 @@
 [package]
-name = "rm-nm"
+name = "rnm"
 version = "0.1.0"
 authors = ["Aleix Casanovas <aleics.casanovas@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 clap = { version = "2.32.0", features = ["yaml"] }
+rayon = "1.0.3"
