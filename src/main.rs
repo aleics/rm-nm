@@ -1,5 +1,8 @@
 extern crate clap;
+extern crate rayon;
+
 use clap::{App, load_yaml};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{io, fs, env};
 use std::path::PathBuf;
 
@@ -12,21 +15,19 @@ fn main() {
     let directory = extract_directory(matches.value_of("directory")).unwrap();
 
     let results = if recursive {
-        rm_rec( &directory)
+        get_rec( &directory)
     } else {
-        vec![rm(&directory)]
+        vec![get(&directory)]
     };
 
-    for result in results {
-        match result {
-            Ok(p) => println!("removed successfully in {}", p.display()),
-            Err(err) => {
-                if debug {
-                    println!("{}", err)
-                }
+    results.into_par_iter()
+        .filter_map(|result| result.ok())
+        .for_each(|path| {
+            if let Err(e) = fs::remove_dir(path) {
+                println!("couldn't delete directory ({})", e)
             }
-        }
-    }
+        });
+
 }
 
 fn extract_directory(arg_directory: Option<&str>) -> io::Result<PathBuf> {
@@ -42,6 +43,24 @@ fn extract_directory(arg_directory: Option<&str>) -> io::Result<PathBuf> {
             Ok(path)
         }
     })
+}
+
+fn get_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
+    let mut vec: Vec<io::Result<PathBuf>> = Vec::new();
+    if path.is_dir() {
+        // remove node modules in the current path
+        vec.push(get(path));
+
+        let entries = path.read_dir()
+            .expect(format!("couldn't read directory entries from directory {}", path.display()).as_str());
+        for entry in entries {
+            if let Ok(dir) = entry {
+                vec.append(&mut get_rec(&dir.path()));
+            }
+        }
+    }
+
+    vec
 }
 
 fn rm_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
