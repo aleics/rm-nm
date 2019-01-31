@@ -62,6 +62,18 @@ fn rm_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
     vec
 }
 
+fn get(path: &PathBuf) -> io::Result<PathBuf> {
+    let mut modules_path = path.clone();
+    modules_path.push("node_modules");
+    if modules_path.exists() && modules_path.is_dir()  {
+        Ok(modules_path)
+    } else {
+        Err(
+            io::Error::new(io::ErrorKind::NotFound, format!("directory {:?} not found.", modules_path.display()))
+        )
+    }
+}
+
 fn rm(path: &PathBuf) -> io::Result<PathBuf> {
     let mut modules_path = path.clone();
     modules_path.push("node_modules");
@@ -116,6 +128,89 @@ mod tests {
     }
 
     #[test]
+    fn test_get_dir() {
+        prepare_dir(|current_dir| {
+            match get(&current_dir) {
+                Ok(result) => {
+                    let mut rm_dir = current_dir.clone();
+                    rm_dir.push("node_modules");
+                    assert_eq!(result, rm_dir)
+                },
+                Err(e) => assert!(false, format!("Error {:?}", e))
+            }
+        });
+    }
+
+    #[test]
+    fn test_get_non_existing_dir() {
+        let mut dir = PathBuf::new();
+        dir.push("/some/directory");
+
+        assert!(get(&dir).is_err());
+    }
+
+    #[test]
+    fn test_get_rec_dirs() {
+        let mut current = env::current_dir().unwrap();
+        current.push("custom_1/node_modules");
+
+        if !current.exists() {
+            fs::create_dir_all(current.clone())
+                .expect("should create a custom_1/node_modules directory");
+        }
+
+        let modules_dir = current.clone();
+
+        current.pop();
+        current.pop();
+
+        let result = get_rec(&current)
+            .into_iter()
+            .find(|r| r.is_ok())
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, modules_dir);
+
+        current.push("custom_1");
+        if current.exists() {
+            fs::remove_dir_all(current.clone()).expect("should delete custom_1 directory")
+        }
+
+        current = env::current_dir().unwrap();
+        current.push("custom_1/custom_1_1/node_modules");
+
+        if !current.exists() {
+            fs::create_dir_all(current.clone())
+                .expect("should create a custom_1/custom_1_1/node_modules directory");
+        }
+
+        let modules_dir = current.clone();
+
+        current.pop();
+        current.pop();
+        current.pop();
+
+        let result = get_rec(&current)
+            .into_iter()
+            .find(|r| r.is_ok())
+            .unwrap()
+            .unwrap();
+        assert_eq!(result, modules_dir);
+
+        current.push("custom_1");
+        if current.exists() {
+            fs::remove_dir_all(current.clone()).expect("should delete custom_1 directory")
+        }
+    }
+
+    #[test]
+    fn test_get_rec_non_existing_dir() {
+        let mut dir = PathBuf::new();
+        dir.push("/some/directory");
+
+        let result = get_rec(&dir);
+        assert!(result.first().is_none());
+    }
     fn test_rm_dir() {
         prepare_dir(|current_dir| {
             match rm(&current_dir) {
