@@ -59,7 +59,7 @@ fn main() {
         let rm_fn: fn(p: Vec<PathBuf>) = |p| {
             p.into_par_iter()
                 .for_each(|path| {
-                    if let Err(e) = fs::remove_dir(path) {
+                    if let Err(e) = fs::remove_dir_all(path) {
                         println!("couldn't delete directory ({})", e)
                     }
                 });
@@ -101,14 +101,18 @@ fn get_rec(path: &PathBuf) -> Vec<io::Result<PathBuf>> {
     let mut vec: Vec<io::Result<PathBuf>> = Vec::new();
     if path.is_dir() {
         // remove node modules in the current path
-        vec.push(get(path));
+        let result = get(path);
 
-        let entries = path.read_dir()
-            .expect(format!("couldn't read directory entries from directory {}", path.display()).as_str());
-        for entry in entries {
-            if let Ok(dir) = entry {
-                vec.append(&mut get_rec(&dir.path()));
+        if result.is_err() { // only iterate further if no node_modules has been found
+            let entries = path.read_dir()
+                .expect(format!("couldn't read directory entries from directory {}", path.display()).as_str());
+            for entry in entries {
+                if let Ok(dir) = entry {
+                    vec.append(&mut get_rec(&dir.path()));
+                }
             }
+        } else {
+            vec.push(result);
         }
     }
 
@@ -241,6 +245,37 @@ mod tests {
         current.push("custom_1");
         if current.exists() {
             fs::remove_dir_all(current.clone()).expect("should delete custom_1 directory")
+        }
+    }
+
+    #[test]
+    fn test_get_rec_multiple_dirs() {
+        let mut current = env::current_dir().unwrap();
+        current.push("custom_2/node_modules/custom_2_2/node_modules");
+
+        if !current.exists() {
+            fs::create_dir_all(current.clone())
+                .expect("should create a custom_2/node_modules/custom_2_2/node_modules directory");
+        }
+
+        current.pop();
+        current.pop();
+
+        let modules_dir = current.clone();
+
+        current.pop();
+        current.pop();
+
+        let result: Vec<PathBuf> = get_rec(&current)
+            .into_iter()
+            .filter_map(|r| r.ok())
+            .collect();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result.get(0).unwrap(), &modules_dir);
+
+        current.push("custom_2");
+        if current.exists() {
+            fs::remove_dir_all(current.clone()).expect("should delete custom_2 directory")
         }
     }
 
