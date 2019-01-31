@@ -1,9 +1,9 @@
 mod tests {
-    extern crate rm_nm;
+    extern crate rnm;
 
     use std::{fs, env};
     use std::path::PathBuf;
-    use rm_nm::dir::*;
+    use rnm::dir::*;
 
     fn prepare_dir<T>(test: T) -> ()
         where T: Fn(PathBuf) -> () {

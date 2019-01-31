@@ -5,7 +5,7 @@ use clap::{App, load_yaml};
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{io, fs};
 use std::path::PathBuf;
-use rm_nm::dir::*;
+use rnm::dir::*;
 
 fn main() {
     let cli = load_yaml!("cli.yml");
