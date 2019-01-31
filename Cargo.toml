@@ -1,7 +1,11 @@
 [package]
 name = "rnm"
 version = "0.1.0"
+description = "Tool for removing node_modules directories under some directory."
 authors = ["Aleix Casanovas <aleics.casanovas@gmail.com>"]
+repository = "https://github.com/aleics/rnm"
+keywords = [ "node_modules", "cleaner", "node"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
